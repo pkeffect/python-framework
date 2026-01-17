@@ -2,9 +2,15 @@
 
 > **Single-file, zero-dependency Python project generator**
 
+<!-- CI/CD Badges -->
+[![CI](https://github.com/pkeffect/python-framework/actions/workflows/ci.yml/badge.svg)](https://github.com/pkeffect/python-framework/actions/workflows/ci.yml)
+[![Release](https://github.com/pkeffect/python-framework/actions/workflows/release.yml/badge.svg)](https://github.com/pkeffect/python-framework/releases)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![No Dependencies](https://img.shields.io/badge/dependencies-none-green.svg)]()
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
+[![Security: bandit](https://img.shields.io/badge/security-bandit-yellow.svg)](https://github.com/PyCQA/bandit)
 
 A production-ready Python project generator that creates complete project structures using **only the Python standard library**. No pip install, no virtual environments needed to run—just Python.
 

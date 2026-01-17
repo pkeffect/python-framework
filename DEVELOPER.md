@@ -341,6 +341,81 @@ python -c "import json; json.load(open('configs/config.json'))"
 
 ---
 
+## CI/CD Pipeline
+
+The project uses GitHub Actions for comprehensive CI/CD. Here's how to run checks locally:
+
+### Prerequisites
+
+Install development tools:
+
+```bash
+pip install ruff black mypy bandit
+```
+
+### Running Lints Locally
+
+```bash
+# Syntax check
+python -m py_compile python_framework.py
+
+# Ruff linter
+ruff check python_framework.py
+
+# Black formatter check
+black --check --diff python_framework.py
+
+# Black auto-format
+black python_framework.py
+
+# MyPy type checking
+mypy python_framework.py --ignore-missing-imports
+
+# Bandit security scan
+bandit -r python_framework.py
+```
+
+### Running All Template Tests
+
+```bash
+# Test all 5 templates
+for template in default minimal api cli library; do
+    echo "Testing $template..."
+    python python_framework.py --name Test${template^} --template $template --no-venv
+    cd Test${template^}
+    python -c "import sys; sys.path.insert(0, 'src'); import test${template}"
+    cd ..
+done
+```
+
+### CI/CD Workflow Overview
+
+| Workflow | Purpose |
+|----------|---------|
+| `ci.yml` | Main CI pipeline with linting, testing, security |
+| `release.yml` | Automatic releases on version tags |
+
+### Creating a Release
+
+```bash
+# 1. Update version in python_framework.py
+#    __version__ = "1.4.0"
+
+# 2. Update CHANGELOG.md
+
+# 3. Commit changes
+git add -A
+git commit -m "Release v1.4.0"
+
+# 4. Tag the release
+git tag v1.4.0
+git push origin main --tags
+
+# 5. GitHub Actions will automatically create the release
+```
+
+---
+
 ## Common Patterns
 
 ### Logging

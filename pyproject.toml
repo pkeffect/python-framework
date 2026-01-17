@@ -1,0 +1,133 @@
+# =============================================================================
+# Ruff Configuration for Internode Bare Metal Framework
+# =============================================================================
+# https://docs.astral.sh/ruff/configuration/
+# =============================================================================
+
+[tool.ruff]
+# Python target version
+target-version = "py311"
+
+# Line length to match Black
+line-length = 100
+
+# Exclude patterns
+exclude = [
+    ".git",
+    ".github",
+    ".venv",
+    "__pycache__",
+    "*.egg-info",
+    "dist",
+    "build",
+]
+
+[tool.ruff.lint]
+# Enable rules
+select = [
+    "E",      # pycodestyle errors
+    "W",      # pycodestyle warnings
+    "F",      # Pyflakes
+    "I",      # isort
+    "B",      # flake8-bugbear
+    "C4",     # flake8-comprehensions
+    "UP",     # pyupgrade
+    "SIM",    # flake8-simplify
+    "ARG",    # flake8-unused-arguments
+    "PTH",    # flake8-use-pathlib
+]
+
+# Ignore specific rules
+ignore = [
+    "E501",   # Line too long (handled by formatter)
+    "B008",   # Do not perform function calls in argument defaults
+    "B905",   # zip() without strict= (Python 3.10+ optimization)
+    "SIM108", # Use ternary operator instead of if-else
+    "PTH123", # open() should use Path.open() - we use both
+]
+
+# Allow unused variables when underscore-prefixed
+dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
+
+[tool.ruff.lint.per-file-ignores]
+# Ignore import errors in __init__.py
+"__init__.py" = ["F401"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["python_framework"]
+
+# =============================================================================
+# Black Configuration
+# =============================================================================
+
+[tool.black]
+line-length = 100
+target-version = ["py311", "py312", "py313"]
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.git
+  | \.github
+  | \.venv
+  | __pycache__
+  | \.egg-info
+  | dist
+  | build
+)/
+'''
+
+# =============================================================================
+# MyPy Configuration
+# =============================================================================
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+check_untyped_defs = true
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+ignore_missing_imports = true
+show_error_codes = true
+pretty = true
+
+# Ignore errors in GUI code (tkinter typing is complex)
+[[tool.mypy.overrides]]
+module = "tkinter.*"
+ignore_errors = true
+
+# =============================================================================
+# Bandit Configuration
+# =============================================================================
+
+[tool.bandit]
+exclude_dirs = [".git", ".github", ".venv", "__pycache__"]
+skips = [
+    "B101",  # assert_used - we use assert for development
+    "B311",  # random - we use secrets for secure randomness anyway
+]
+
+# =============================================================================
+# Coverage Configuration (for future test coverage)
+# =============================================================================
+
+[tool.coverage.run]
+source = ["python_framework"]
+branch = true
+omit = [
+    "*/__pycache__/*",
+    "*/tests/*",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+]
+show_missing = true
+fail_under = 0

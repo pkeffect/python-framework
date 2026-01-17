@@ -1,0 +1,18 @@
+# =============================================================================
+# Code Owners
+# =============================================================================
+# Defines who is automatically requested for review on pull requests
+# =============================================================================
+
+# Default owner for everything
+* @pkeffect
+
+# CI/CD workflows
+/.github/ @pkeffect
+
+# Core script
+/python_framework.py @pkeffect
+
+# Documentation
+/README.md @pkeffect
+/CHANGELOG.md @pkeffect
