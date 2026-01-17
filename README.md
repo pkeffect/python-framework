@@ -8,6 +8,10 @@
 
 A production-ready Python project generator that creates complete project structures using **only the Python standard library**. No pip install, no virtual environments needed to run—just Python.
 
+
+![Internode Python Framework UI](./images/firefox_fJLSai4HOg.png)
+![Internode Python Framework Directory Structure](./images/image-2026-01-17-165426.png)
+
 ## ✨ Features
 
 - 🐍 **Zero Dependencies** - Uses only Python stdlib
