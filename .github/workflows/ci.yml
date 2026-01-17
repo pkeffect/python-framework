@@ -249,7 +249,7 @@ jobs:
           grep -q "## 📋 Usage" README.md && echo "✓ Usage section"
 
       - name: Markdown lint
-        uses: DavidAnson/markdownlint-cli2-action@v16
+        uses: DavidAnson/markdownlint-cli2-action@v22
         with:
           globs: '*.md'
         continue-on-error: true
