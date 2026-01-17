@@ -6,7 +6,7 @@ production-ready project structures using only the Python standard library.
 
 Author: pkeffect
 License: MIT
-Repository: https://github.com/pkeffect/internode-framework
+Repository: https://github.com/pkeffect/python-framework
 """
 
 import json
