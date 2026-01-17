@@ -138,7 +138,7 @@ jobs:
           EOF
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           name: "v${{ needs.validate.outputs.version }}"
           body_path: release_body.md
