@@ -50,7 +50,7 @@
 | Dockerfile | ✅ | ✅ | ✅ |
 | ci.yml | ✅ | ✅ | N/A |
 | .pre-commit-config.yaml | ✅ | ✅ | N/A |
-| src/__init__.py | ✅ | ✅ | ✅ |
+| src/`__init__.py` | ✅ | ✅ | ✅ |
 | tests/test_main.py | ✅ | ✅ | ✅ |
 
 ---
@@ -70,7 +70,11 @@
 
 ### Plugin System Security
 
-The plugin system uses `exec()` to load user plugins. This is an **intentional design choice** to enable extensibility. Mitigations:
+The plugin system uses `exec()` to load user plugins.
+This is an **intentional design choice** to enable extensibility.
+
+Mitigations:
+
 - Plugins restricted to `~/.internode/plugins/`
 - User controls which plugins are installed
 - No automatic plugin installation
