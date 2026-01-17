@@ -22,7 +22,7 @@ A production-ready Python project generator that creates complete project struct
 
 ```bash
 # Clone or download
-git clone https://github.com/pkeffect/internode-framework.git
+git clone https://github.com/pkeffect/python-framework.git
 cd internode-framework
 
 # Generate a project
