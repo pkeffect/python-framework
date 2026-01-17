@@ -9,17 +9,17 @@ License: MIT
 Repository: https://github.com/pkeffect/python-framework
 """
 
-import json
-import configparser
 import argparse
-import venv
-import secrets
+import configparser
+import json
 import logging
-import sys
 import re
-from pathlib import Path
+import secrets
+import sys
+import venv
 from datetime import datetime
-from typing import Dict, Any, List, Optional
+from pathlib import Path
+from typing import Any
 
 # =============================================================================
 # Script Metadata
@@ -39,10 +39,7 @@ if sys.version_info < MIN_PYTHON:
 # Logging Configuration
 # =============================================================================
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s"
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
 # =============================================================================
@@ -87,68 +84,68 @@ CONTENT_TYPE_HTML = "text/html; charset=utf-8"
 # =============================================================================
 
 
-def _parse_toml_line(line: str, current_section: str, config: Dict[str, Any]) -> str:
+def _parse_toml_line(line: str, current_section: str, config: dict[str, Any]) -> str:
     """
     Parse a single line of TOML-like config.
-    
+
     Args:
         line: The line to parse (already stripped).
         current_section: The current section name.
         config: The config dict to update.
-    
+
     Returns:
         The new current section name.
     """
     # Skip empty lines and comments
     if not line or line.startswith("#"):
         return current_section
-    
+
     # Section header
     if line.startswith("[") and line.endswith("]"):
         section = line[1:-1]
         if section not in config:
             config[section] = {}
         return section
-    
+
     # Key-value pair
     if "=" in line:
         key, value = line.split("=", 1)
         key = key.strip()
         value = value.strip().strip('"').strip("'")
-        
+
         if current_section == "default":
             config[key] = value
         else:
             if current_section not in config:
                 config[current_section] = {}
             config[current_section][key] = value
-    
+
     return current_section
 
 
-def load_config_file() -> Dict[str, Any]:
+def load_config_file() -> dict[str, Any]:
     """
     Load user defaults from ~/.internode.toml if it exists.
-    
+
     Returns:
         Dictionary of configuration values.
     """
-    config: Dict[str, Any] = {}
-    
+    config: dict[str, Any] = {}
+
     if not CONFIG_FILE.exists():
         return config
-    
+
     try:
         content = CONFIG_FILE.read_text(encoding="utf-8")
         current_section = "default"
-        
+
         for line in content.splitlines():
             current_section = _parse_toml_line(line.strip(), current_section, config)
-        
+
         logger.info("Loaded config from %s", CONFIG_FILE)
     except Exception as e:
         logger.warning("Could not parse config file: %s", e)
-    
+
     return config
 
 
@@ -157,46 +154,46 @@ def load_config_file() -> Dict[str, Any]:
 # =============================================================================
 
 
-def load_plugins() -> List[Dict[str, Any]]:
+def load_plugins() -> list[dict[str, Any]]:
     """
     Load user-defined plugins from ~/.internode/plugins/.
-    
+
     Plugins must define a register() function that returns plugin metadata.
     Optional hooks: post_generate(generator), post_update(generator).
-    
+
     Returns:
         List of loaded plugin dictionaries.
     """
-    plugins: List[Dict[str, Any]] = []
-    
+    plugins: list[dict[str, Any]] = []
+
     if not PLUGINS_DIR.exists():
         return plugins
-    
+
     for plugin_file in PLUGINS_DIR.glob("*.py"):
         try:
             plugin_code = plugin_file.read_text(encoding="utf-8")
-            plugin_module: Dict[str, Any] = {
+            plugin_module: dict[str, Any] = {
                 "__name__": plugin_file.stem,
                 "__file__": str(plugin_file),
             }
             exec(compile(plugin_code, plugin_file, "exec"), plugin_module)
-            
+
             if "register" in plugin_module:
                 plugin_info = plugin_module["register"]()
                 if plugin_info:
-                    plugins.append({
-                        "name": plugin_file.stem,
-                        "path": plugin_file,
-                        "module": plugin_module,
-                        "info": plugin_info,
-                    })
+                    plugins.append(
+                        {
+                            "name": plugin_file.stem,
+                            "path": plugin_file,
+                            "module": plugin_module,
+                            "info": plugin_info,
+                        }
+                    )
                     logger.info("Loaded plugin: %s", plugin_file.stem)
         except Exception as e:
             logger.warning("Failed to load plugin %s: %s", plugin_file, e)
-    
+
     return plugins
-
-
 
 
 TEMPLATES = {
@@ -241,21 +238,21 @@ TEMPLATES = {
 class FrameworkGUI:
     """
     Modern Tkinter GUI for the Internode Bare Metal Framework Generator.
-    
+
     Features a dark gray theme with orange accents, scrollable content area,
     and all configuration options accessible in a single window.
     """
-    
+
     def __init__(self) -> None:
         """Initialize the GUI application."""
         import tkinter as tk
-        from tkinter import ttk, filedialog, messagebox
-        
+        from tkinter import filedialog, messagebox, ttk
+
         self.tk = tk
         self.ttk = ttk
         self.filedialog = filedialog
         self.messagebox = messagebox
-        
+
         # Create main window
         self.root = tk.Tk()
         self.root.title(f"{__project__} v{__version__}")
@@ -263,7 +260,7 @@ class FrameworkGUI:
         self.root.configure(bg=THEME["bg"])
         self.root.resizable(True, True)
         self.root.minsize(500, 600)
-        
+
         # Tkinter variables
         self.project_name = tk.StringVar(value="MyProject")
         self.output_dir = tk.StringVar(value=".")
@@ -273,15 +270,15 @@ class FrameworkGUI:
         self.enable_venv = tk.BooleanVar(value=True)
         self.update_mode = tk.BooleanVar(value=False)
         self.dry_run = tk.BooleanVar(value=False)
-        
+
         self._apply_styles()
         self._create_widgets()
-    
+
     def _apply_styles(self) -> None:
         """Apply custom ttk styles for the dark theme."""
         style = self.ttk.Style()
         style.theme_use("clam")
-        
+
         # Accent button (orange)
         style.configure(
             STYLE_ACCENT_BTN,
@@ -297,7 +294,7 @@ class FrameworkGUI:
             background=[("active", THEME["accent_hover"]), ("pressed", THEME["accent"])],
             foreground=[("active", THEME["fg"])],
         )
-        
+
         # Secondary button (gray)
         style.configure(
             STYLE_SECONDARY_BTN,
@@ -311,7 +308,7 @@ class FrameworkGUI:
             STYLE_SECONDARY_BTN,
             background=[("active", THEME["border"])],
         )
-        
+
         # Radio buttons
         style.configure(
             "TRadiobutton",
@@ -319,7 +316,7 @@ class FrameworkGUI:
             foreground=THEME["fg"],
             font=(FONT_FAMILY, 10),
         )
-        
+
         # Checkbuttons
         style.configure(
             "TCheckbutton",
@@ -327,20 +324,20 @@ class FrameworkGUI:
             foreground=THEME["fg"],
             font=(FONT_FAMILY, 10),
         )
-    
+
     def _create_widgets(self) -> None:
         """Create all GUI widgets with scrollable content."""
         tk = self.tk
         ttk = self.ttk
-        
+
         # Create main container
         container = tk.Frame(self.root, bg=THEME["bg"])
         container.pack(fill="both", expand=True)
-        
+
         # Header (fixed at top)
         header_frame = tk.Frame(container, bg=THEME["bg"], padx=30, pady=15)
         header_frame.pack(fill="x")
-        
+
         tk.Label(
             header_frame,
             text="🐍 Internode Framework",
@@ -348,7 +345,7 @@ class FrameworkGUI:
             bg=THEME["bg"],
             fg=THEME["accent"],
         ).pack()
-        
+
         tk.Label(
             header_frame,
             text=f"Bare Metal Python Generator v{__version__}",
@@ -356,51 +353,50 @@ class FrameworkGUI:
             bg=THEME["bg"],
             fg=THEME["fg_secondary"],
         ).pack(pady=(2, 0))
-        
+
         # Separator
         tk.Frame(container, height=2, bg=THEME["border"]).pack(fill="x")
-        
+
         # Scrollable content area
         canvas = tk.Canvas(container, bg=THEME["bg"], highlightthickness=0)
         scrollbar = ttk.Scrollbar(container, orient="vertical", command=canvas.yview)
         scrollable_frame = tk.Frame(canvas, bg=THEME["bg"])
-        
+
         scrollable_frame.bind(
-            "<Configure>",
-            lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
+            "<Configure>", lambda _: canvas.configure(scrollregion=canvas.bbox("all"))
         )
-        
+
         canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
         canvas.configure(yscrollcommand=scrollbar.set)
-        
+
         # Enable mousewheel scrolling
         def _on_mousewheel(event):
             canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
-        
+
         canvas.bind_all("<MouseWheel>", _on_mousewheel)
-        
+
         canvas.pack(side="left", fill="both", expand=True, padx=(30, 0))
         scrollbar.pack(side="right", fill="y")
-        
+
         # Content padding frame
         content = tk.Frame(scrollable_frame, bg=THEME["bg"], padx=10, pady=20)
         content.pack(fill="both", expand=True)
-        
+
         # === Project Settings Section ===
         self._create_section_header(content, "Project Settings")
         self._create_input_field(content, "Project Name", self.project_name)
         self._create_directory_field(content, "Output Directory", self.output_dir)
-        
+
         # === Author Section ===
         self._create_section_header(content, "Author Information")
         self._create_input_field(content, "Author Handle", self.author_handle)
         self._create_input_field(content, "Author Email", self.author_email)
-        
+
         # === Template Selection ===
         self._create_section_header(content, "Template")
         template_frame = tk.Frame(content, bg=THEME["bg"])
         template_frame.pack(fill="x", pady=5)
-        
+
         for key, val in TEMPLATES.items():
             desc = val["description"]
             label = f"{key.capitalize()} - {desc[:45]}{'...' if len(desc) > 45 else ''}"
@@ -410,31 +406,31 @@ class FrameworkGUI:
                 variable=self.template,
                 value=key,
             ).pack(anchor="w", pady=2)
-        
+
         # === Options Section ===
         self._create_section_header(content, "Options")
-        
+
         ttk.Checkbutton(
             content,
             text="Create Virtual Environment (.venv)",
             variable=self.enable_venv,
         ).pack(anchor="w", pady=3)
-        
+
         ttk.Checkbutton(
             content,
             text="Update Mode (add missing files only)",
             variable=self.update_mode,
         ).pack(anchor="w", pady=3)
-        
+
         ttk.Checkbutton(
             content,
             text="Dry Run (preview only, no files created)",
             variable=self.dry_run,
         ).pack(anchor="w", pady=3)
-        
+
         # Spacer
         tk.Frame(content, height=30, bg=THEME["bg"]).pack()
-        
+
         # === Generate Button ===
         ttk.Button(
             content,
@@ -442,7 +438,7 @@ class FrameworkGUI:
             style=STYLE_ACCENT_BTN,
             command=self._generate,
         ).pack(fill="x", pady=(10, 20))
-        
+
         # Footer (in scrollable area)
         tk.Label(
             content,
@@ -451,12 +447,12 @@ class FrameworkGUI:
             bg=THEME["bg"],
             fg=THEME["fg_secondary"],
         ).pack(pady=(0, 10))
-    
+
     def _create_section_header(self, parent, text: str) -> None:
         """Create a styled section header."""
         frame = self.tk.Frame(parent, bg=THEME["bg"])
         frame.pack(fill="x", pady=(15, 8))
-        
+
         self.tk.Label(
             frame,
             text=text,
@@ -464,14 +460,14 @@ class FrameworkGUI:
             bg=THEME["bg"],
             fg=THEME["accent"],
         ).pack(anchor="w")
-        
+
         self.tk.Frame(frame, height=1, bg=THEME["border"]).pack(fill="x", pady=(5, 0))
-    
+
     def _create_input_field(self, parent, label: str, variable) -> None:
         """Create a styled text input field."""
         frame = self.tk.Frame(parent, bg=THEME["bg"])
         frame.pack(fill="x", pady=6)
-        
+
         self.tk.Label(
             frame,
             text=label,
@@ -479,7 +475,7 @@ class FrameworkGUI:
             bg=THEME["bg"],
             fg=THEME["fg"],
         ).pack(anchor="w")
-        
+
         entry = self.tk.Entry(
             frame,
             textvariable=variable,
@@ -493,12 +489,12 @@ class FrameworkGUI:
             highlightcolor=THEME["accent"],
         )
         entry.pack(fill="x", ipady=8, pady=4)
-    
+
     def _create_directory_field(self, parent, label: str, variable) -> None:
         """Create a directory input with browse button."""
         frame = self.tk.Frame(parent, bg=THEME["bg"])
         frame.pack(fill="x", pady=6)
-        
+
         self.tk.Label(
             frame,
             text=label,
@@ -506,10 +502,10 @@ class FrameworkGUI:
             bg=THEME["bg"],
             fg=THEME["fg"],
         ).pack(anchor="w")
-        
+
         input_row = self.tk.Frame(frame, bg=THEME["bg"])
         input_row.pack(fill="x", pady=4)
-        
+
         entry = self.tk.Entry(
             input_row,
             textvariable=variable,
@@ -523,32 +519,32 @@ class FrameworkGUI:
             highlightcolor=THEME["accent"],
         )
         entry.pack(side="left", fill="x", expand=True, ipady=8, padx=(0, 10))
-        
+
         self.ttk.Button(
             input_row,
             text="Browse",
             style=STYLE_SECONDARY_BTN,
             command=lambda: self._browse_directory(variable),
         ).pack(side="right")
-    
+
     def _browse_directory(self, variable) -> None:
         """Open directory browser dialog."""
         directory = self.filedialog.askdirectory()
         if directory:
             variable.set(directory)
-    
+
     def _generate(self) -> None:
         """Generate the project based on current settings."""
         name = self.project_name.get().strip()
-        
+
         if not name:
             self.messagebox.showerror("Error", "Project name is required!")
             return
-        
+
         try:
             output_path = Path(self.output_dir.get()) / name
             plugins = load_plugins()
-            
+
             generator = ProjectGenerator(
                 project_name=name,
                 output_dir=output_path,
@@ -561,33 +557,36 @@ class FrameworkGUI:
                 plugins=plugins,
             )
             generator.generate()
-            
+
             if self.dry_run.get():
                 self.messagebox.showinfo(
                     "Dry Run Complete",
-                    f"Preview for '{name}' complete.\nCheck console for details."
+                    f"Preview for '{name}' complete.\nCheck console for details.",
                 )
             else:
                 self.messagebox.showinfo(
-                    "Success",
-                    f"Project '{name}' generated!\n\nLocation:\n{output_path.absolute()}"
+                    "Success", f"Project '{name}' generated!\n\nLocation:\n{output_path.absolute()}"
                 )
         except Exception as e:
             self.messagebox.showerror("Error", f"Generation failed:\n{e}")
-    
+
     def run(self) -> None:
         """Start the GUI main loop."""
         self.root.mainloop()
 
+
 def launch_gui() -> None:
     """
     Launch the GUI application.
-    
+
     Attempts to use Tkinter first. If Tkinter is unavailable or fails,
     falls back to a web-based UI served via http.server.
     """
     try:
-        import tkinter
+        from importlib.util import find_spec
+
+        if find_spec("tkinter") is None:
+            raise ImportError("tkinter not found")
         logger.info("Tkinter available, launching native GUI...")
         gui = FrameworkGUI()
         gui.run()
@@ -606,7 +605,7 @@ def _launch_web_gui() -> None:
     print("  Your browser will open automatically.")
     print("  Press Ctrl+C in this terminal to stop.")
     print("=" * 60 + "\n")
-    
+
     web_gui = WebGUI()
     web_gui.run()
 
@@ -619,36 +618,36 @@ def _launch_web_gui() -> None:
 class WebGUI:
     """
     Web-based fallback GUI using http.server.
-    
+
     Provides the same functionality as the Tkinter GUI but rendered
     in the user's web browser. Used when Tkinter is unavailable.
     """
-    
+
     PORT = 8765
     HOST = "localhost"
-    
+
     def __init__(self) -> None:
         """Initialize the web GUI."""
         self.server = None
-    
+
     def _get_html_page(self, message: str = "", message_type: str = "") -> str:
         """Generate the HTML page with current state."""
         templates_html = ""
         for key, val in TEMPLATES.items():
             desc = val["description"]
-            templates_html += f'''
+            templates_html += f"""
                 <label class="radio-option">
                     <input type="radio" name="template" value="{key}" {"checked" if key == "default" else ""}>
                     <span class="radio-label">{key.capitalize()} - {desc}</span>
                 </label>
-            '''
-        
+            """
+
         message_html = ""
         if message:
             color = THEME["success"] if message_type == "success" else THEME["accent"]
             message_html = f'<div class="message" style="background: {color}20; border-left: 4px solid {color}; padding: 12px; margin-bottom: 20px;">{message}</div>'
-        
-        return f'''<!DOCTYPE html>
+
+        return f"""<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -656,7 +655,7 @@ class WebGUI:
     <title>{__project__} v{__version__}</title>
     <style>
         * {{ margin: 0; padding: 0; box-sizing: border-box; }}
-        
+
         body {{
             font-family: "{FONT_FAMILY}", -apple-system, BlinkMacSystemFont, sans-serif;
             background: {THEME["bg"]};
@@ -664,34 +663,34 @@ class WebGUI:
             min-height: 100vh;
             padding: 20px;
         }}
-        
+
         .container {{
             max-width: 650px;
             margin: 0 auto;
         }}
-        
+
         header {{
             text-align: center;
             padding: 20px 0 30px;
             border-bottom: 2px solid {THEME["border"]};
             margin-bottom: 30px;
         }}
-        
+
         h1 {{
             font-size: 28px;
             color: {THEME["accent"]};
             margin-bottom: 8px;
         }}
-        
+
         .subtitle {{
             color: {THEME["fg_secondary"]};
             font-size: 14px;
         }}
-        
+
         .section {{
             margin-bottom: 25px;
         }}
-        
+
         .section-title {{
             font-size: 14px;
             font-weight: bold;
@@ -700,14 +699,14 @@ class WebGUI:
             padding-bottom: 8px;
             border-bottom: 1px solid {THEME["border"]};
         }}
-        
+
         label {{
             display: block;
             font-size: 13px;
             color: {THEME["fg"]};
             margin-bottom: 6px;
         }}
-        
+
         input[type="text"], input[type="email"] {{
             width: 100%;
             padding: 12px 14px;
@@ -719,45 +718,45 @@ class WebGUI:
             margin-bottom: 15px;
             transition: border-color 0.2s;
         }}
-        
+
         input[type="text"]:focus, input[type="email"]:focus {{
             outline: none;
             border-color: {THEME["accent"]};
         }}
-        
+
         .radio-option {{
             display: block;
             padding: 8px 0;
             cursor: pointer;
         }}
-        
+
         .radio-option input {{
             margin-right: 10px;
             accent-color: {THEME["accent"]};
         }}
-        
+
         .radio-label {{
             font-size: 13px;
         }}
-        
+
         .checkbox-group {{
             margin-top: 10px;
         }}
-        
+
         .checkbox-option {{
             display: flex;
             align-items: center;
             padding: 8px 0;
             cursor: pointer;
         }}
-        
+
         .checkbox-option input {{
             margin-right: 10px;
             accent-color: {THEME["accent"]};
             width: 16px;
             height: 16px;
         }}
-        
+
         .btn-primary {{
             width: 100%;
             padding: 16px 24px;
@@ -771,11 +770,11 @@ class WebGUI:
             transition: background 0.2s;
             margin-top: 20px;
         }}
-        
+
         .btn-primary:hover {{
             background: {THEME["accent_hover"]};
         }}
-        
+
         footer {{
             text-align: center;
             padding: 20px 0;
@@ -783,7 +782,7 @@ class WebGUI:
             font-size: 12px;
             margin-top: 30px;
         }}
-        
+
         .message {{
             border-radius: 4px;
             font-size: 14px;
@@ -796,33 +795,33 @@ class WebGUI:
             <h1>🐍 Internode Framework</h1>
             <p class="subtitle">Bare Metal Python Generator v{__version__} (Web UI)</p>
         </header>
-        
+
         {message_html}
-        
+
         <form method="POST" action="/">
             <div class="section">
                 <div class="section-title">Project Settings</div>
                 <label>Project Name</label>
                 <input type="text" name="project_name" value="MyProject" required>
-                
+
                 <label>Output Directory</label>
                 <input type="text" name="output_dir" value=".">
             </div>
-            
+
             <div class="section">
                 <div class="section-title">Author Information</div>
                 <label>Author Handle</label>
                 <input type="text" name="author_handle" value="{DEFAULT_AUTHOR_HANDLE}">
-                
+
                 <label>Author Email</label>
                 <input type="email" name="author_email" value="{DEFAULT_AUTHOR_EMAIL}">
             </div>
-            
+
             <div class="section">
                 <div class="section-title">Template</div>
                 {templates_html}
             </div>
-            
+
             <div class="section">
                 <div class="section-title">Options</div>
                 <div class="checkbox-group">
@@ -840,41 +839,41 @@ class WebGUI:
                     </label>
                 </div>
             </div>
-            
+
             <button type="submit" class="btn-primary">🚀 Generate Project</button>
         </form>
-        
+
         <footer>
             Made with Python stdlib only • No external dependencies<br>
             <small>Close this tab and press Ctrl+C in terminal to stop</small>
         </footer>
     </div>
 </body>
-</html>'''
-    
+</html>"""
+
     def _create_handler(self) -> type:
         """Create a request handler class with access to self."""
         import http.server
         import urllib.parse
-        
+
         web_gui = self
-        
+
         class RequestHandler(http.server.BaseHTTPRequestHandler):
             def log_message(self, format, *args):
                 # Suppress default logging
                 pass
-            
+
             def do_GET(self):
                 self.send_response(200)
                 self.send_header("Content-type", CONTENT_TYPE_HTML)
                 self.end_headers()
                 self.wfile.write(web_gui._get_html_page().encode("utf-8"))
-            
+
             def do_POST(self):
                 content_length = int(self.headers.get("Content-Length", 0))
                 body = self.rfile.read(content_length).decode("utf-8")
                 params = urllib.parse.parse_qs(body)
-                
+
                 # Extract form values
                 project_name = params.get("project_name", [""])[0].strip()
                 output_dir = params.get("output_dir", ["."])[0].strip() or "."
@@ -884,7 +883,7 @@ class WebGUI:
                 enable_venv = "enable_venv" in params
                 update_mode = "update_mode" in params
                 dry_run = "dry_run" in params
-                
+
                 if not project_name:
                     html = web_gui._get_html_page("Project name is required!", "error")
                     self.send_response(200)
@@ -892,11 +891,11 @@ class WebGUI:
                     self.end_headers()
                     self.wfile.write(html.encode("utf-8"))
                     return
-                
+
                 try:
                     output_path = Path(output_dir) / project_name
                     plugins = load_plugins()
-                    
+
                     generator = ProjectGenerator(
                         project_name=project_name,
                         output_dir=output_path,
@@ -909,38 +908,36 @@ class WebGUI:
                         plugins=plugins,
                     )
                     generator.generate()
-                    
+
                     if dry_run:
                         msg = f"Dry run complete for '{project_name}'. Check console."
                     else:
                         msg = f"Project '{project_name}' generated at {output_path.absolute()}"
-                    
+
                     html = web_gui._get_html_page(msg, "success")
                 except Exception as e:
                     html = web_gui._get_html_page(f"Error: {e}", "error")
-                
+
                 self.send_response(200)
                 self.send_header("Content-type", CONTENT_TYPE_HTML)
                 self.end_headers()
                 self.wfile.write(html.encode("utf-8"))
-        
+
         return RequestHandler
-    
+
     def run(self) -> None:
         """Start the web server and open browser."""
-        import http.server
         import socketserver
         import webbrowser
-        import urllib.parse
-        
+
         socketserver.TCPServer.allow_reuse_address = True
         handler = self._create_handler()
-        
+
         with socketserver.TCPServer((self.HOST, self.PORT), handler) as httpd:
             url = f"http://{self.HOST}:{self.PORT}"
             logger.info("Web UI running at %s", url)
             webbrowser.open(url)
-            
+
             try:
                 httpd.serve_forever()
             except KeyboardInterrupt:
@@ -980,55 +977,55 @@ class ProjectGenerator:
             logger.info(f"[DRY-RUN] Would generate project: {self.project_name}")
             self._print_dry_run_preview()
             return
-        
+
         if self.update_mode:
             logger.info(f"Updating project: {self.project_name} (adding missing files only)")
             self._validate_project_name()
             self._update_project()
             return
-        
+
         logger.info(f"Initializing project: {self.project_name} (template: {self.template_name})")
         self._validate_project_name()
         self._create_directories()
-        
+
         if self.template["include_configs"]:
             self._create_config_files()
-        
+
         self._create_gitignore()
         self._create_pyproject_toml()
         self._create_manage_py()
         self._create_source_code()
-        
+
         if self.template["include_tests"]:
             self._create_tests()
-        
+
         if self.template["include_docs"]:
             self._create_documentation()
         else:
             self._create_readme_minimal()
-        
+
         self._create_license()
         self._create_github_actions()
         self._create_precommit_config()
         self._create_dockerfile()
-        
+
         # Run plugin hooks
         self._run_plugin_hooks("post_generate")
-        
+
         if self.enable_venv:
             self._create_venv()
 
         self._print_next_steps()
-    
+
     def _update_project(self) -> None:
         """Update an existing project by adding missing files only."""
         if not self.output_dir.exists():
             logger.error(f"Project directory does not exist: {self.output_dir}")
             logger.info("Use without --update to create a new project.")
             sys.exit(1)
-        
+
         files_added = 0
-        
+
         # Define files to check/add
         files_to_check = [
             (self.output_dir / ".gitignore", self._create_gitignore),
@@ -1039,20 +1036,20 @@ class ProjectGenerator:
             (self.output_dir / ".pre-commit-config.yaml", self._create_precommit_config),
             (self.output_dir / "Dockerfile", self._create_dockerfile),
         ]
-        
+
         for file_path, create_func in files_to_check:
             if not file_path.exists():
                 logger.info(f"Adding missing file: {file_path.name}")
                 create_func()
                 files_added += 1
-        
+
         if files_added == 0:
             logger.info("No missing files found. Project is up to date.")
         else:
             logger.info(f"Added {files_added} missing file(s).")
-        
+
         self._run_plugin_hooks("post_update")
-    
+
     def _run_plugin_hooks(self, hook_name: str) -> None:
         """Run plugin hooks by name."""
         for plugin in self.plugins:
@@ -1092,7 +1089,7 @@ class ProjectGenerator:
 
     def _validate_project_name(self) -> None:
         """Validates the project name for invalid characters."""
-        if not re.match(r'^[a-zA-Z][a-zA-Z0-9_-]*$', self.project_name):
+        if not re.match(r"^[a-zA-Z][a-zA-Z0-9_-]*$", self.project_name):
             raise ValueError(
                 f"Invalid project name '{self.project_name}'. "
                 "Name must start with a letter and contain only letters, numbers, hyphens, or underscores."
@@ -1122,16 +1119,15 @@ python manage.py run
 """
         (self.output_dir / "README.md").write_text(content, encoding="utf-8")
 
-
     def _create_config_files(self) -> None:
         """Creates configuration files using standard libraries and secure secrets."""
         logger.info("Creating configuration files...")
-        
+
         config_dir = self.output_dir / "configs"
         comment = "For database settings, use this configuration."
         host = "localhost"
         port = 5432
-        
+
         # Security: Generate a random API key instead of hardcoding
         api_key = secrets.token_urlsafe(32)
 
@@ -1156,7 +1152,9 @@ API_KEY={api_key}
 DEBUG=True
 """
         (self.output_dir / ".env").write_text(env_content, encoding="utf-8")
-        (self.output_dir / ".env.example").write_text("# Secrets\nDB_URL=...\nAPI_KEY=...\nDEBUG=False\n", encoding="utf-8")
+        (self.output_dir / ".env.example").write_text(
+            "# Secrets\nDB_URL=...\nAPI_KEY=...\nDEBUG=False\n", encoding="utf-8"
+        )
 
         # 3. YAML (Manual creation)
         yaml_content = f"""# {comment}
@@ -1168,15 +1166,15 @@ database:
         (config_dir / "config.yaml").write_text(yaml_content, encoding="utf-8")
 
         # 4. JSON
-        data_json: Dict[str, Any] = {
+        data_json: dict[str, Any] = {
             "database": {"host": host, "port": port, "enabled": True},
-            "logging": {"level": "INFO"}
+            "logging": {"level": "INFO"},
         }
         (config_dir / "config.json").write_text(json.dumps(data_json, indent=4), encoding="utf-8")
 
         # 5. INI
         config = configparser.ConfigParser()
-        config['DATABASE'] = {'host': host, 'port': str(port), 'enabled': 'true'}
+        config["DATABASE"] = {"host": host, "port": str(port), "enabled": "true"}
         with (config_dir / "config.ini").open("w", encoding="utf-8") as f:
             f.write(f"; {comment}\n")
             config.write(f)
@@ -1349,7 +1347,7 @@ def lint():
         except SyntaxError as e:
             print(f"  ✗ {{py_file}}: {{e}}")
             errors += 1
-    
+
     for py_file in Path("tests").rglob("*.py"):
         try:
             with open(py_file, "r", encoding="utf-8") as f:
@@ -1361,7 +1359,7 @@ def lint():
             errors += 1
         except FileNotFoundError:
             pass
-    
+
     if errors:
         print(f"\\nFound {{errors}} syntax error(s).")
         sys.exit(1)
@@ -1395,7 +1393,7 @@ def main():
     if len(sys.argv) < 2:
         show_help()
         sys.exit(1)
-    
+
     commands = {{
         "test": run_tests,
         "run": run_app,
@@ -1404,7 +1402,7 @@ def main():
         "build": build,
         "help": show_help,
     }}
-    
+
     command = sys.argv[1]
     if command in commands:
         commands[command]()
@@ -1418,21 +1416,21 @@ if __name__ == "__main__":
 """
         manage_py_path = self.output_dir / "manage.py"
         manage_py_path.write_text(content, encoding="utf-8")
-        
+
         # Try to make it executable on Unix systems
         try:
             current_mode = manage_py_path.stat().st_mode
             manage_py_path.chmod(current_mode | 0o111)
         except Exception:
-            pass # Ignore on non-Unix or if fails
+            pass  # Ignore on non-Unix or if fails
 
     def _create_source_code(self) -> None:
         """Creates the source code skeleton."""
         logger.info("Creating source code...")
-        
+
         # __init__.py
         (self.src_dir / "__init__.py").touch()
-        
+
         # main.py
         main_content = """import logging
 import sys
@@ -1540,7 +1538,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.1.0] - {date}
 ### Added
 - Initial project structure.
-""".format(date=datetime.now().strftime('%Y-%m-%d'))
+""".format(
+            date=datetime.now().strftime("%Y-%m-%d")
+        )
         (self.output_dir / "CHANGELOG.md").write_text(changelog_content, encoding="utf-8")
 
         # 4. CODE_OF_CONDUCT.md
@@ -1774,8 +1774,8 @@ of this software...
         logger.info("Creating GitHub Actions workflow...")
         workflows_dir = self.output_dir / ".github" / "workflows"
         workflows_dir.mkdir(parents=True, exist_ok=True)
-        
-        ci_content = f"""name: CI
+
+        ci_content = """name: CI
 
 on:
   push:
@@ -1793,10 +1793,10 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Set up Python ${{{{ matrix.python-version }}}}
+    - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v5
       with:
-        python-version: ${{{{ matrix.python-version }}}}
+        python-version: ${{ matrix.python-version }}
 
     - name: Install dependencies
       run: |
@@ -1870,7 +1870,7 @@ COPY . .
 CMD ["python", "manage.py", "run"]
 """
         (self.output_dir / "Dockerfile").write_text(content, encoding="utf-8")
-        
+
         # Also create .dockerignore
         dockerignore = """# Dockerignore
 .git
@@ -1902,54 +1902,55 @@ build
 
     def _print_next_steps(self) -> None:
         """Prints helpful next steps for the user with cross-platform instructions."""
-        print("\n" + "="*60)
+        print("\n" + "=" * 60)
         print(f"Project '{self.project_name}' generated successfully!")
-        print("="*60)
+        print("=" * 60)
         print(f"Location: {self.output_dir.absolute()}\n")
-        
+
         print("NEXT STEPS:")
         print("1.  Navigate to the project directory:")
         print(f"    cd {self.output_dir}")
-        
+
         if self.enable_venv:
             print("\n2.  Activate the virtual environment:")
-            
+
             # Windows PowerShell
             print("    [Windows PowerShell]:")
             print(f"    .\\{self.output_dir.name}\\.venv\\Scripts\\Activate.ps1")
-            
+
             # Windows Command Prompt
             print("    [Windows Command Prompt]:")
             print(f"    {self.output_dir.name}\\.venv\\Scripts\\activate.bat")
-            
+
             # Unix (Bash/Zsh)
             print("    [Unix/MacOS]:")
             print(f"    source {self.output_dir.name}/.venv/bin/activate")
-            
+
             print("\n    (To exit the environment later, simply type: deactivate)")
-        
+
         print("\n3.  Install the project in editable mode:")
         print("    pip install -e .")
-        
+
         print("\n4.  Run the application:")
         print("    python manage.py run")
-        
+
         print("\n5.  Run tests:")
         print("    python manage.py test")
-        print("="*60 + "\n")
+        print("=" * 60 + "\n")
+
 
 def main() -> None:
     # Load user config file first
     user_config = load_config_file()
-    
+
     # Load plugins
     plugins = load_plugins()
-    
+
     # Set defaults from config file if available
     default_author = user_config.get("author", DEFAULT_AUTHOR_HANDLE)
     default_email = user_config.get("email", DEFAULT_AUTHOR_EMAIL)
     default_template = user_config.get("template", "default")
-    
+
     parser = argparse.ArgumentParser(
         description=f"Bare Metal Python Framework Generator v{__version__}",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -1960,7 +1961,7 @@ def main() -> None:
   python python_framework.py --gui
   python python_framework.py --name TestProject --dry-run
   python python_framework.py --name ExistingProject --update
-"""
+""",
     )
     parser.add_argument("--name", help="Name of the project")
     parser.add_argument("--out", default=".", help="Output directory (default: current dir)")
@@ -1971,47 +1972,51 @@ def main() -> None:
         "--template",
         choices=list(TEMPLATES.keys()),
         default=default_template,
-        help="Project template to use"
+        help="Project template to use",
     )
-    parser.add_argument("--dry-run", action="store_true", help="Preview files without creating them")
-    parser.add_argument("--update", action="store_true", help="Update existing project (add missing files only)")
+    parser.add_argument(
+        "--dry-run", action="store_true", help="Preview files without creating them"
+    )
+    parser.add_argument(
+        "--update", action="store_true", help="Update existing project (add missing files only)"
+    )
     parser.add_argument("--interactive", "-i", action="store_true", help="Interactive mode")
     parser.add_argument("--gui", action="store_true", help="Launch GUI (Tkinter with web fallback)")
     parser.add_argument("--gui2", action="store_true", help="Launch web-based GUI directly")
     parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
-    
+
     args = parser.parse_args()
-    
+
     # GUI2 mode - launch web UI directly, bypass Tkinter
     if args.gui2:
         _launch_web_gui()
         return
-    
+
     # GUI mode - try Tkinter first, fallback to web if unavailable
     if args.gui:
         launch_gui()
         return
-    
+
     # Interactive mode
     if args.interactive or (not args.name and not args.update):
         print(f"\n=== Bare Metal Python Framework Generator v{__version__} ===")
         print("Interactive Mode (press Enter for defaults)\n")
-        
+
         name = input("Project name [MyProject]: ").strip() or "MyProject"
         out = input("Output directory [.]: ").strip() or "."
         author = input(f"Author handle [{default_author}]: ").strip() or default_author
         email = input(f"Author email [{default_email}]: ").strip() or default_email
-        
+
         print("\nAvailable templates:")
         for key, val in TEMPLATES.items():
             print(f"  {key}: {val['description']}")
         template = input(f"Template [{default_template}]: ").strip() or default_template
-        
+
         create_venv = input("Create virtual environment? [Y/n]: ").strip().lower()
-        enable_venv = create_venv != 'n'
-        
-        dry_run = input("Dry run (preview only)? [y/N]: ").strip().lower() == 'y'
-        update_mode = input("Update existing project? [y/N]: ").strip().lower() == 'y'
+        enable_venv = create_venv != "n"
+
+        dry_run = input("Dry run (preview only)? [y/N]: ").strip().lower() == "y"
+        update_mode = input("Update existing project? [y/N]: ").strip().lower() == "y"
         print()
     else:
         name = args.name
@@ -2022,13 +2027,13 @@ def main() -> None:
         enable_venv = not args.no_venv
         dry_run = args.dry_run
         update_mode = args.update
-    
+
     if not name:
         print("Error: Project name is required. Use --name or --interactive.")
         sys.exit(1)
-    
+
     output_path = Path(out) / name
-    
+
     generator = ProjectGenerator(
         project_name=name,
         output_dir=output_path,
@@ -2041,6 +2046,7 @@ def main() -> None:
         plugins=plugins,
     )
     generator.generate()
+
 
 if __name__ == "__main__":
     main()
