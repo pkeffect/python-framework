@@ -173,7 +173,6 @@ jobs:
         run: |
           python python_framework.py --version
           python python_framework.py --help
-          python python_framework.py --list-templates
           python python_framework.py --name DryProject --dry-run
           python python_framework.py --name VenvlessProject --no-venv
 

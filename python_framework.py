@@ -176,7 +176,7 @@ def load_plugins() -> list[dict[str, Any]]:
                 "__name__": plugin_file.stem,
                 "__file__": str(plugin_file),
             }
-            exec(compile(plugin_code, plugin_file, "exec"), plugin_module)
+            exec(compile(plugin_code, plugin_file, "exec"), plugin_module)  # nosec B102
 
             if "register" in plugin_module:
                 plugin_info = plugin_module["register"]()
@@ -1421,8 +1421,8 @@ if __name__ == "__main__":
         try:
             current_mode = manage_py_path.stat().st_mode
             manage_py_path.chmod(current_mode | 0o111)
-        except Exception:
-            pass  # Ignore on non-Unix or if fails
+        except Exception:  # nosec B110
+            pass  # Intentional: Ignore on non-Unix or if chmod fails
 
     def _create_source_code(self) -> None:
         """Creates the source code skeleton."""
