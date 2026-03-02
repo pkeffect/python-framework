@@ -215,7 +215,7 @@ jobs:
           echo "No obvious hardcoded secrets found"
 
       - name: Upload security report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: security-report
